@@ -1,0 +1,41 @@
+
+# MAKE SURE TO LEAVE THE DENY LIST AT THE TOP OF THE FILE !!!
+# BEGIN DENY LIST --
+# END DENY LIST --
+
+#AuthUserFile /home/web/.htpasswd
+#AuthGroupFile /dev/null
+#AuthName "BETA"
+#AuthType Basic
+#require valid-user
+
+#php_flag cgi.fix_pathinfo 0
+#php_value session.auto_start 1
+
+#AddType text/cache-manifest manifest
+#AddType text/javascript js
+#AddType video/ogg ogg ogv
+#AddType video/mp4 mp4
+#AddType audio/mpeg mp3
+#AddType image/png png
+
+#AddOutputFilterByType DEFLATE text/html text/plain text/xml
+#AddOutputFilterByType DEFLATE text/css text/javascript application/json
+
+RewriteEngine on  
+
+#RewriteRule ^(ad|js)/ - [S=2]
+#RewriteRule ^([a-z][a-z])/(.*)$ ./index.php?/language/pagine/$1/$2 [L,QSA]
+#RewriteRule ^([a-z][a-z])(/)?$ /$1/home [R,L]
+
+#RewriteRule ^wiki$ /wiki
+#RewriteRule ^([0-9]+)$ /app/manager2/$1 [L,R] 
+
+#RewriteRule ^u/(\w+)$ /user/apps/$1 [L,R,QSA]
+#RewriteRule ^blog/([0-9]+)/(.+)$ /blog/news/$1/$2 [L,R,QSA]
+#RewriteRule ^blog/([0-9]+)$ /blog/news/$1 [L,R,QSA]
+
+RewriteCond $1 !^(index\.php|images|css|js|robots\.txt|favicon\.ico)  
+RewriteCond %{REQUEST_FILENAME} !-f  
+RewriteCond %{REQUEST_FILENAME} !-d  
+RewriteRule ^(.*)$ ./index.php?/$1 [L,QSA]  

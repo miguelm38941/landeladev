@@ -1,0 +1,57 @@
+<html>
+<head>
+<?php
+	include_once(__DIR__.'/head.php');
+?>
+</head>
+<body>
+<?php
+	include_once(__DIR__.'/menu.php');
+?>
+<main>
+<div class="container">
+<?php
+	$html ="<div class='row'>";
+
+	$found = false;
+	foreach($datas as $data){
+
+		$status = lns_get_machine_status($data['id']); 
+		
+		if($status['status'] == 'good' || $status['status'] == 'unknow') continue;
+
+		$found = true;
+		$color = $status['color'];
+
+		$data['ctitle'] = $data['client_name']."<br/>".$data['area_name']."<br/>".$data['notes'];
+		$content='';
+		foreach($status['errors'] as $s){
+			$content .= "<div>$s</div>";
+		}
+		$data['ccontent']=$content;
+		$html .= "<div class='col s4'>";
+		$html .= '<div class="card '.$color.' darken-3" data-id="'.$data['id'].'".>
+			<div class="card-content white-text">
+			<span class="card-title">'.$data['ctitle'].'</span>
+			<p>'.$data['ccontent'].'</p>
+			</div>
+			<div class="card-action">';
+
+		$html .='<a href="'.site_url('/lns/checks/'.$data['id']).'">SHOW</a>';
+
+		$html .='</div></div>';
+		$html .= "</div>";
+	}
+	if(!$found){
+		$html.='<div class="card green"><div class="card-content white-text">
+              <span class="card-title">Tout les clims sont OK</span>
+            </div></div>';
+	}	
+
+	$html .= "</div>";
+	echo $html;
+?>
+</div>
+</main>
+</body>
+</html>

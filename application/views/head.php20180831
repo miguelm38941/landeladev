@@ -1,0 +1,75 @@
+<!--
+<link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.5/css/materialize.min.css">
+<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.5/js/materialize.min.js"></script>
+-->
+<link href="<?= base_url('fonts/fonts.css') ?>" rel="stylesheet">
+    <Import materialize.css>
+    <link rel="stylesheet" href="https://cdn.rawgit.com/Dogfalo/materialize/fc44c862/dist/css/materialize.min.css">
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.1.min.js"></script>
+    <script src="https://cdn.rawgit.com/Dogfalo/materialize/fc44c862/dist/js/materialize.min.js"></script>
+<script type="text/javascript" src="<?= base_url('js/chart.min.js') ?>"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script type="text/javascript">
+window.base_url='<?= base_url() ?>';
+
+</script>
+<link rel="stylesheet" href="<?= base_url('css/styles.css') ?>"/>
+<script type="text/javascript" src="<?= base_url('js/common.js') ?>"></script>
+<script type="text/javascript" src="<?= base_url('js/lgedit.js') ?>"></script>
+<script type="text/javascript" src="<?= base_url('js/pagination.js') ?>"></script>
+
+<script src="<?= base_url('js/FileSaver.min.js') ?>"></script>
+<script src="<?= base_url('js/Blob.min.js') ?>"></script>
+<script src="<?= base_url('js/xls.core.min.js') ?>"></script>
+<script src="<?= base_url('js/tableexport.js') ?>"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){
+
+	/* Export xls */
+	$("table").tableExport({formats: ["xlsx","xls", "csv"],    });
+
+	  var _gaq = _gaq || [];
+	  _gaq.push(['_setAccount', 'UA-36251023-1']);
+	  _gaq.push(['_setDomainName', 'jqueryscript.net']);
+	  _gaq.push(['_trackPageview']);
+
+	  (function() {
+	    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+	    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+	    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	  })();
+	/* End Export xls */
+
+  $('#myTable').pageMe({
+    pagerSelector:'#myPager',
+    activeColor: 'blue',
+    prevText:'Anterior',
+    nextText:'Siguiente',
+    showPrevNext:true,
+    hidePageNumbers:false,
+    perPage:10
+  });
+
+
+var doc = new jsPDF();
+var specialElementHandlers = {
+    '#editor': function (element, renderer) {
+        return true;
+    }
+};
+
+$('#cmd').click(function () {   
+    doc.fromHTML($('#content').html(), 15, 15, {
+        'width': 170,
+            'elementHandlers': specialElementHandlers
+    });
+    doc.save('sample-file.pdf');
+});
+
+});
+</script>
+
+        

@@ -1,0 +1,80 @@
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    margin: 0 0 50px;
+    /* bottom = footer height */
+    /*padding: 25px;*/
+}
+
+footer {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 50px;
+    width: 100%;
+    overflow: hidden;
+}
+a {
+  color: white;
+  text-decoration: none; /* no underline */
+}
+
+nav{
+	background-color:rgb(185,36,54);
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+div.container{
+	width:90%;
+}
+
+a.brand-logo img{
+	height:64px;
+}
+
+a.lgedit_path{
+	color:rgb(59,81,111) !important;
+}
+
+#lgedit_add	{
+	position:fixed;
+	bottom:20px;
+	right:20px;
+}
+
+th.actions{
+	width:75px;
+}
+
+.card-action a {
+  color: white !important;
+  text-decoration: none; /* no underline */
+}
+
+a.material-icons {
+  color: black !important;
+}
+body.dashboard div.card{
+	text-align:center;
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+}
+
+#entete{
+	width:50%;
+}	
+
+/*#footer{
+	width:50%;
+}*/	
+
+/*.wrapper{
+	margin-bottom:-50px;
+}*/	

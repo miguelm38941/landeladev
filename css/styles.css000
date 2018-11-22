@@ -1,0 +1,57 @@
+a {
+  color: white;
+  text-decoration: none; /* no underline */
+}
+
+nav{
+	background-color:rgb(185,36,54);
+}
+
+main {
+}
+
+div.container{
+	width:90%;
+}
+
+a.brand-logo img{
+	height:64px;
+}
+
+a.lgedit_path{
+	color:rgb(59,81,111) !important;
+}
+
+#lgedit_add	{
+	position:fixed;
+	bottom:20px;
+	right:20px;
+}
+
+th.actions{
+	width:75px;
+}
+
+.card-action a {
+  color: white !important;
+  text-decoration: none; /* no underline */
+}
+
+a.material-icons {
+  color: black !important;
+}
+body.dashboard div.card{
+	text-align:center;
+}
+
+#entete{
+	width:50%;
+}	
+
+#footer{
+	width:50%;
+}	
+
+.wrapper{
+	margin-bottom:-50px;
+}	

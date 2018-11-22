@@ -1,0 +1,86 @@
+<?php
+
+class Lg {
+
+    var $context;
+    var $cookie;
+    var $headers;
+
+    function __construct(){
+        $CI =& get_instance();
+		$CI->load->config('lgedit');
+		$CI->load->helper('lgedit');
+		$CI->load->model('mlg');
+	}
+
+	function set_data($table,$id,$datas,$replace=false){
+        $CI =& get_instance();
+		$CI->mlg->set_table_data($table,$id,$datas,$replace);
+	}
+
+	function get_datas($table,$filters=array(),$metadatas=false){
+        $CI =& get_instance();
+		$datas = $CI->mlg->get_table_datas($table,$filters,$metadatas);
+		return $this->_filter($datas,$filters,$metadatas);
+	}
+	
+	function get_data($table,$filters=array(),$metadatas=false){
+        $CI =& get_instance();
+		$datas = $CI->mlg->get_table_datas($table,$filters,$metadatas);
+		$res = $this->_filter($datas,$filters,$metadatas);
+		return count($res) > 0 ? $res[0] : false;
+	}
+
+<<<<<<< local
+	function _filter($datas,$filters,$metadatas=false){
+=======
+	function _filter($datas,$filters){
+
+>>>>>>> other
+		$res=array();
+		foreach($datas as $d){
+			$r = json_decode($d['datas'],true);
+			$r['id']=$d['id'];
+			if($metadatas){
+				$r['user']=$d['user'];
+				$r['created']=$d['created'];
+				$r['updated']=$d['updated'];
+			}
+			$add=true;
+
+			foreach($filters as $k => $v){
+				if(!is_array($v)){
+					if(in_array($v,array('isset','!isset'))){
+						if($v == "isset" && !isset($r[$k])){
+							$add=false;
+						}else if($v == "!isset" && isset($r[$k])){
+							$add=false;
+						}
+					}else{
+						if($r[$k] != $v){
+							$add=false;
+						}
+					}
+				}
+				if(is_array($v) && !in_array($r[$k],$v)){
+					$add=false;
+				}
+			}			
+
+<<<<<<< local
+			if($add){
+				$res[]=$r;
+			}
+=======
+			if($add)
+				$res[$r['id']]=$r;
+>>>>>>> other
+		}
+		//echo "<pre>";
+		//print_r($res);
+		//return $res;	
+		return array_values($res);	
+	}
+}
+
+?>

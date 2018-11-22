@@ -1,0 +1,236 @@
+<html>
+
+<head>
+
+<?php
+
+	include_once(APPPATH.'/views/head.php');
+
+?>
+
+<script type="text/javascript">
+
+$(document).ready(function(){
+
+	$("#societe_pharma").on('change',function(){
+
+		var datas = {
+
+			"id":<?= $commande['id'] ?>,
+
+			"societe_pharma" : $(this).val()
+
+		}
+
+		$.post('<?= site_url('/backend/commandes/add_societe_pharma') ?>',datas,function(){
+
+		});
+
+	});
+
+});
+
+</script>
+<style type="text/css" media="screen">
+	#commande_summary caption { display: none; }
+</style>
+
+</head>
+
+<body>
+
+<div class="wrapper">
+
+<?php
+
+	include_once(APPPATH.'/views/menu.php');
+
+?>
+
+<main>
+
+<div class="container">
+
+<h2>Commande de medicament</h2>
+
+
+
+<?php
+
+	$dests = get_all_destinataires_commandes();
+
+	$sc = get_societe_pharma();
+
+	$can_save=false;
+
+?>
+
+<table id="commande_summary" border="1" style="width:30%">
+
+<tr>
+
+	<td>Destinataire:</td>
+
+	<td><?= $dests[$commande['destinataire']]?></td>
+
+</tr>
+<tr>
+
+	<td>Date d'envoi:</td>
+
+	<td><?= (isset($commande['sent']))? $commande['sent'] : 'N/A' ?></td>
+
+</tr>
+
+<!--
+
+<tr>
+
+	<td>Societe :</td>
+
+	<td>
+
+	<?php 
+
+			if(isset($commande['societe_pharma']) && !empty($commande['societe_pharma'])){
+
+				 echo  $sc[$commande['societe_pharma']];
+
+				$can_save=false;
+
+			}else{
+
+				echo '<select id="societe_pharma">';
+
+				echo '<option value="">Selectioner</option>';
+
+				foreach($sc as $k => $v){
+
+					echo '<option value="'.$k.'">'.$v.'</option>';
+
+				}
+
+				echo '</select>';
+
+			}
+
+	?>
+
+	</td>
+
+</tr>http://127.0.0.1/landela/backend/commandes/deliver/
+
+-->
+
+</table>
+
+
+
+<div id="">
+
+<form action="<?= site_url('/lgedit/add/commandes/') ?>" method="post">
+
+	<?php $ps = json_decode($commande['produits'],true); ?>
+
+	<table border=1>
+
+	<thead>
+
+		<th>Designation</th>
+
+		<th>Quantite</th>
+
+		<?php if( !isset($commande['acheteur_self']) || !empty($ps[0]['peremption']) ) : ?>
+
+			<th>Date de p&eacute;remption</th>
+
+		<?php endif; ?>
+
+	</thead>
+
+	<tbody>
+
+	<?php
+
+		$prods = get_produits();
+
+		foreach($ps as $p){
+
+			echo "<tr>";
+
+			echo "<td>".$prods[$p['produit']]."</td>";
+
+			echo "<td>".$p['quantite']."</td>";
+
+			if(!isset($commande['acheteur_self'])){
+
+				echo '<td><input id="lgedit_peremption" name="produits_peremption[]" type="text" class="validate datepicker picker__input invalid" value="2018-07-24" required="" readonly="" tabindex="-1" aria-haspopup="true" aria-expanded="false" aria-readonly="false" aria-owns="lgedit_peremption_root"></td>';
+
+			}else{
+				echo "<td>".$p['peremption']."</td>";
+			}
+
+			echo "</tr>";
+
+			echo '<input type="hidden" name="produits_produit[]" value="'.$p['produit'].'">';
+
+			echo '<input type="hidden" name="produits_quantite[]" value="'.$p['quantite'].'">';
+
+		}
+
+	?>
+
+	</tbody>
+
+	</table>
+
+	<?php if( !isset($commande['acheteur_self'])  && (isset($commande['sent']) || $commande['sent']!='') ) : ?>
+		<input type="hidden" name="id" value="<?= $commande['id']; ?>">
+
+		<input type="hidden" name="destinataire" value="<?= $commande['destinataire']; ?>">
+
+		<input type="hidden" name="acheteur" value="<?= $commande['acheteur']; ?>">
+
+		<input type="hidden" name="deliver" value="true">
+
+		<span><input type="submit" class="btn" value="Envoyer"></span>
+	<?php elseif( (!isset($commande['sent']) || $commande['sent']=='') ) : ?>
+		<br><br>
+		<span><a class="btn" href="<?= site_url('/backend/commandes/send/'.$commande['id']) ?>">Commander</a></span>
+	<?php endif; ?>
+
+</form>
+
+</div>
+
+<div>
+
+<?php
+
+	if($can_save){
+
+?>
+
+	<a class="btn" href="<?= site_url('/backend/commandes/record/'.$commande['id']) ?>">ENREGISTRER</a>
+
+<?php
+
+	}
+
+?>
+
+</div>
+
+<a href="<?= site_url('/backend/exportPdf/commande/'.$commande['id']) ?>" target="_blank" class="btn" style="margin-top:20px;" >Imprimer</a>
+</div>
+
+</main>
+
+</div>
+
+<?php include_once(APPPATH.'/views/footer.php'); ?>
+
+</body>
+
+</html>
+

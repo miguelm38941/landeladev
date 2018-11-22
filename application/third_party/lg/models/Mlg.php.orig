@@ -1,0 +1,66 @@
+<?php
+
+class Mlg extends CI_Model {
+
+	function __construct(){
+		parent::__construct();
+	}
+
+	function set_table_data($table,$id,$datas,$replace=false){
+		$CI =& get_instance();
+
+		$user=0;
+		if(isset($CI->session)){
+			$uid = $CI->session->userdata('user_id');	
+			if(is_numeric($uid)){
+				$user=$uid;
+			}	
+		}
+
+		$res=false;
+		if(is_numeric($id)){
+			$this->db->where('table_name',$table);
+			$this->db->where('id',$id);
+			$res = $this->db->get('lg_datas')->row_array();
+		}
+		if($res){
+			if(!$replace){
+				$old = json_decode($res['datas'],true);
+				$datas=array_merge($old,$datas);
+				$datas = json_encode($datas,JSON_PRETTY_PRINT);	
+			}
+			$this->db->where('id',$id);
+			$this->db->where('table_name',$table);
+			$this->db->update('lg_datas',array('user' => $user, 'datas' => $datas));
+			$this->db->insert('lg_datas_log',array('table_name' => $table, 'user' => $user , 'operation' => 'MOD', 'new_datas' => $datas, 'old_datas' => json_encode($old)));
+		}else{
+			$this->db->insert('lg_datas',array('id' => $id,'table_name'=> $table,'user' => $user,'datas' => json_encode($datas), 'created' => date('Y-m-d H:i:s')));
+			$this->db->insert('lg_datas_log',array('table_name' => $table, 'user' => $user , 'operation' => 'ADD', 'new_datas' => json_encode($datas)));
+	
+		}
+	}
+
+	function get_table_datas($table,$filters=array(),$metadatas=false){
+		$this->db->where('table_name',$table);
+
+		if(isset($filters['id'])){
+			if(is_array($filters['id'])){
+				$this->db->where_in('id',$filters['id']);
+			}else{
+				$this->db->where('id',$filters['id']);
+			}
+		}
+		
+		if(isset($filters['user'])){
+			$this->db->where('user',$filters['user']);
+		}
+
+		$this->db->order_by('id','DESC');
+
+		return $this->db->get('lg_datas')->result_array();
+	}
+
+}
+
+
+?>
