@@ -24,9 +24,9 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 |
 */
 if(ENVIRONMENT == 'development' ){
-	$config['base_url'] = 'http://dev.landela.org/';
+	$config['base_url'] = 'http://127.0.0.1/landela/';
 }else{
-	$config['base_url'] = 'http://dev.landela.org/';
+	$config['base_url'] = 'http://127.0.0.1/landela/';
 }
 /*
 |--------------------------------------------------------------------------

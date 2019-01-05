@@ -171,10 +171,18 @@ function lgedit_generate_table($t,$datas=array(),$options=array(),$group=false){
 			if( ($kk=='delivered') || ($kk=='created') || ($kk=='sent') || ($kk=='received') ){
 				if(!empty($val)) $val =  date(  "d/m/Y", strtotime( $val ) );
 			}
-
+			if(!is_array($val)):
 			$html .= "<td data-name='$kk' class='$c' $dvals>";
-			$html .= $val;
+			//$html .= $val;
+			if($val=='checked') {
+				$html .= '<img src="' . base_url('images/checked.png') . '" alt="checked">';
+			} elseif($val=='unchecked') {
+				$html .= '<img src="' . base_url('images/unchecked.png') . '" alt="Unchecked">';
+			} else {
+				$html .= $val;
+			}
 			$html .= "</td>";
+			endif;
 		}
 
 		if(is_array($opt['buttons']) && !empty($opt['buttons'])){
@@ -217,7 +225,16 @@ function lgedit_generate_table($t,$datas=array(),$options=array(),$group=false){
 				}elseif($opt['links']['send_mail']){
 					$html .= '<span><a href="'.site_url($v."/".$d[$table['id']]."/send_mail").'" <i class="material-icons dp48 mail">'.$k.'</i></a></span>';
 				}else{*/
-					$html .= '&nbsp;&nbsp;<span><a href="'.site_url($v."/".$d[$table['id']]).'" <i class="material-icons dp48">'.$k.'</i></a></span>&nbsp;&nbsp;';
+					//$html .='--'.$v.$d[$table['id']].'++'.$table['id'];
+					// Traiter les liens pour les consultations
+					if($v=='/backend/profile_pvv/consultation'){
+						$expl=explode('/', $v);
+						$consultationUrl = '/'.$expl[1].'/'.$expl[2].'/'.$d[$table['id']].'/'.$expl[3];
+					}else{
+						$consultationUrl = $v."/".$d[$table['id']];
+					}
+					
+					$html .= '&nbsp;&nbsp;<span><a href="'.site_url($consultationUrl).'" <i class="material-icons dp48">'.$k.'</i></a></span>&nbsp;&nbsp;';
 				/*}*/
 			}
 			//$html .= "</th>";
@@ -279,7 +296,6 @@ function lgedit_generate_form($t,$values=array(),$update=false){
 	$html .= "<form action='#' method='POST' data-table=\"$t\">";	
 	foreach($table['fields'] as $k => $v){
 		if($k == $table['id']) continue;
-
 		$l = isset($v['label']) ? $v['label'] : $k;
 		$val = isset($values[$k]) ? $values[$k] : '';
 		$r = isset($v['required']) ? 'required' : '' ;
@@ -328,14 +344,32 @@ function lgedit_generate_form($t,$values=array(),$update=false){
 			if(!is_array($vals)){
 				$vals = call_user_func($vals);
 			}
+			$multiple = ( isset($v['multiple']) && (!$v['multiple']) )? '' : '[]';
 			$col = isset($v['cols']) ? 12/$v['cols'] : 12;
 			$html .= "<h5>$l</h5>";
 
 			foreach($vals as $kk => $vv){
 				$checked = is_array($val) && in_array($kk,$val) ? 'checked' : '';
 				$html.="<div class='col s$col'>";
-				$html.='<input id="checkbox'.$k.$kk.'" type="checkbox" name="'.$k.'[]" value="'.$kk.'" '.$checked.'/>';
+				$html.='<input id="checkbox'.$k.$kk.'" type="checkbox" name="'.$k.$multiple.'" value="'.$kk.'" '.$checked.'/>';
 				$html.='<label for="checkbox'.$k.$kk.'">'.$vv.'</label>';
+				$html.="</div>";
+			}
+
+		}else if($v['type'] == "radio"){
+			$vals = $v['values'];
+			if(!is_array($vals)){
+				$vals = call_user_func($vals);
+			}
+			$multiple = ( isset($v['multiple']) && (!$v['multiple']) )? '' : '[]';
+			$col = isset($v['cols']) ? 12/$v['cols'] : 12;
+			$html .= "<h5>$l</h5>";
+
+			foreach($vals as $kk => $vv){
+				$checked = is_array($val) && in_array($kk,$val) ? 'checked' : '';
+				$html.="<div class='col s$col'>";
+				$html.='<input id="radio'.$k.$kk.'" type="radio" name="'.$k.$multiple.'" value="'.$kk.'" '.$checked.'/>';
+				$html.='<label for="radio'.$k.$kk.'">'.$vv.'</label>';
 				$html.="</div>";
 			}
 
@@ -413,17 +447,25 @@ function lgedit_generate_form($t,$values=array(),$update=false){
 					if(!$val || empty($val)){
 						$val = date('Y-m-d');
 					}
+			$html .= '<div class="input-field col s12">
+          			<input name="'.$k.'" type="'.$t.'" class="datepicker" value="'.$val.'" />
+          	 		<label for="lgedit_'.$k.'">'.$l.'</label>
+        		</div>';
 					break;
 				default:
 					$t = $v['type'];
-			
-			}
-
-			
 			$html .= '<div class="input-field col s12">
           			<input id="lgedit_'.$k.'" name="'.$k.'" type="'.$t.'" class="validate '.$c1.'" value="'.$val.'" '.$r.'/>
           	 		<label for="lgedit_'.$k.'">'.$l.'</label>
         		</div>';
+			
+			}
+
+			
+			/*$html .= '<div class="input-field col s12">
+          			<input id="lgedit_'.$k.'" name="'.$k.'" type="'.$t.'" class="validate '.$c1.'" value="'.$val.'" '.$r.'/>
+          	 		<label for="lgedit_'.$k.'">'.$l.'</label>
+        		</div>';*/
 		}
 
 		$html .="</div>";

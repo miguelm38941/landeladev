@@ -124,6 +124,11 @@ class Mlg extends CI_Model {
 		return $this->db->get('users')->row_array();
 	}
 
+	function get_user_by_entityid($entityid){ 
+		$this->db->where('entityid',$entityid);
+		return $this->db->get('users')->row_array();
+	}
+
 	function get_user_by_username($username){
 		$this->db->where('username',$username);
 		return $this->db->get('users')->row_array();

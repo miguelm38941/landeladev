@@ -74,10 +74,17 @@ class Lgedit extends CI_Controller {
 
 		$table = $tables[$t];
 
-		
-
 		$datas=$this->input->post();
 
+
+		if( isset($datas['username']) && ($datas['username']=='') && ($t=='medecin')){
+			$CI =& get_instance();
+			$c1="";
+			$c2=substr(strtolower($datas['nom']), 0, 1);
+			$c3=strtolower($datas['prenom']);
+			$c = $c1.$c2.$c3;
+			$datas['username']=$c;
+		}
 
 
 		if(isset($datas['api'])){
@@ -90,27 +97,38 @@ class Lgedit extends CI_Controller {
 
 				$ordonnance = $this->lg->get_data('ordonnances',array('pvv' => $datas['pvv'], 'etat' => '', 'delivered' => ''),true);
 
-				$ordonnance['prepose_pharmacie'] = $datas['prepose_pharmacie'];//$this->session->userdata('user_id');
+				if($ordonnance){
+					$ordonnance['prepose_pharmacie'] = $datas['prepose_pharmacie'];//$this->session->userdata('user_id');
 
-				$prdts = json_decode($ordonnance["produits"]);
+					$prdts = is_array($ordonnance["produits"]) ? $ordonnance["produits"]: json_decode($ordonnance["produits"]) ;
 
-				$i=0;
-				foreach ($prdts as $prdt) {
-					foreach ($prdt as $key => $value) {
+					$i=0;
+					foreach ($prdts as $prdt) {
+						foreach ($prdt as $key => $value) {
 
-						$ordonnance["produits_".$key][$i] = $value;//."_".
+							$ordonnance["produits_".$key][$i] = $value;//."_".
 
+						}
+						$i++;
 					}
-					$i++;
+
+					unset($ordonnance["produits"]);
+
+					$ordonnance['etat'] = 'En attente';
+
+					$datas = $ordonnance;
+
+					$datas['api'] = true;
+
+					$datas['api_pharmacie'] = true;
+
+					$ordonnanceToReturn = $ordonnance;
+
+				}else{
+
+					echo json_encode(array('success'=>false, 'message'=>'Aucune ordonnance ne correspond aux criteres'));
+					return;
 				}
-
-				unset($ordonnance["produits"]);
-
-				$datas = $ordonnance;
-
-				$datas['api'] = true;
-
-				$datas['api_pharmacie'] = true;
 
 				//var_dump($ordonnance["produits"]); exit;
 
@@ -166,7 +184,7 @@ class Lgedit extends CI_Controller {
 
 				}		
 
-				$v = json_encode($rr);
+				$v = $rr;//json_encode($rr);
 
 				$res[$k]=$v;
 
@@ -176,7 +194,7 @@ class Lgedit extends CI_Controller {
 
 				if(is_array($v)){
 
-					$v = json_encode($v);
+					$v = $v;//json_encode($v);
 
 				}
 
@@ -251,22 +269,59 @@ class Lgedit extends CI_Controller {
 
 		//echo ' <br><br> ';
 
+		if($t=='consultation' && isset($_GET['consultid']) && isset($_GET['pvv'])) { 
+			if(is_numeric($_GET['consultid']) && is_numeric($_GET['pvv'])):
+				$idconsultation = $_GET['consultid'];
+				$pvv = $_GET['pvv'];
+				$res1=$this->lg->get_data('consultation',array('id' => $idconsultation),true);
+				$res1['user'] = $res1['agent'];
+				$res1['etat'] = 'done';
+				$this->lg->set_data('consultation',$idconsultation,$res1,false);
+				redirect('/backend/consultations/');
+			endif;
+			die('Invalid data entered.');
+		}//else{ echo 'yes';
+
 		if($t=='ordonnances' && empty($res['id'])) { //echo 'yes';
 
 			$res1=$this->lg->get_data('consultation',array('id' => $res['consultation']),true);
 
 			$res1['user'] = $res1['agent'];
 
-			$res1['etat'] = 'done';
+			//$res1['etat'] = 'done';
 
 			$this->lg->set_data('consultation',$res['consultation'],$res1,false);
 
+			$res['initiated'] = date('Y-m-d');
+
+			$res['closed'] = date('Y-m-d', strtotime('+1 month'));
+
+			$res['num_renewed'] = 0;
+
 		}//else{ echo 'yes';
 
+		// Vérifier si les constantes existent pour cette consultation
+		if($t=='constante'){
+			$constante=$this->lg->get_data('constante',array('consultation' => $res['consultation']),true);
+			if(!empty($constante)) {
+				echo 'Les constantes ont d&eacute;j&agrave; &eacute;t&eacute; prises.';
+				exit;
+			}
+		}
+
+		// Faire la nouvelle insertion
 		$return = $this->lg->set_data($t,$id,$res,false);
 
-		$login_register = $this->set_pvv_login($pvv_data);
-		$return = ($login_register)? '1. '.$return.'<br>2. Utilisateur configuré!':$return;
+		//$arrayOfUsersToCreate = array('pvv','medecin','educateur','zonesante','partenaire','societe_pharma');
+		if($t=='pvv'){
+			$datas['entity_id'] = $return;
+		}
+
+		$arrayOfUsersToCreate = array('pvv','medecin','educateur');
+		if(in_array($t, $arrayOfUsersToCreate)){
+			$login_register = $this->set_pvv_login($t,$datas);
+			$return = ($login_register)? '1. '.$return.'<br>2. Utilisateur configuré!':$return;			
+		}
 
 		//}	
 
@@ -287,19 +342,56 @@ class Lgedit extends CI_Controller {
 		}
 
 
-
+		//if($t=='constante'){
+		//	redirect('/backend/profile_pvv/'.$res['pvv'].'/consultation');
+		//}
 		//var_dump($res); exit;
 
-		if(isset($datas['api'])){
+		if(isset($datas['api'])  && !isset($datas['api_pharmacie'])){
 
-			echo (is_int($return))? 'DONE':'FAILED';
+			header('Content-type: application/json');
+			if(is_int($return)){
+				echo json_encode(array(
+										'success'=>true,
+										'result'=>'DONE!'
+									)
+								); 
+			}else{
+				echo json_encode(array(
+										'success'=>false,
+										'error'=>'FAILED!'
+									)
+								); 
+			}
+			return;
+		}
 
+		if(isset($datas['api'])  && isset($datas['api_pharmacie'])){
+
+			if(isset($ordonnanceToReturn)){
+				echo json_encode($ordonnanceToReturn);
+			}else{
+				echo null;
+			}
+			return;
 		}
 
 		else{
-
-			echo $return;
-
+			header('Content-type: application/json');
+			if(is_integer($return)){
+				echo json_encode(array(
+										'success'=>true,
+										'result'=>'Enregistrement r&eacute;ussi!'
+									)
+								); 
+			}else{
+				echo json_encode(array(
+										'success'=>false,
+										'error'=>'Echec de l\'enregistrement'
+									)
+								); 
+			}
+			return;
 		}
 
 		
@@ -352,16 +444,53 @@ class Lgedit extends CI_Controller {
 
 
 
-	private function set_pvv_login($pvv_data){
+	private function set_pvv_login($t, $pvv_data){
 		$identity = $pvv_data['username'];
 		$password = $pvv_data['password'];
 		$email = $pvv_data['email'];
 		$login_data['first_name'] = $pvv_data['prenom'];
 		$login_data['last_name'] = $pvv_data['nom'];
 		$login_data['phone'] = $pvv_data['telephone'];
+		$login_data['entityid'] = $pvv_data['entity_id'];
+
 		//$login_data['password_confirm'] = $pvv_data['password_confirm'];
 		//exit;
-		$login_register = $this->ion_auth->register($identity, $password, $email, $login_data, array('12'));
+		switch ($t) {
+			case 'pvv':
+				$groups = array('12');
+				break;
+			case 'educateur':
+				$groups = array('11');
+				break;			
+			case 'medecin':
+				$groups = array('9');
+				break;			
+			case 'province':
+				$groups = array('18');
+				break;			
+			case 'ville':
+				$groups = array('19');
+				break;			
+			case 'zonesante':
+				$groups = array('15');
+				break;			
+			case 'regionsante':
+				$groups = array('14');
+				break;			
+			case 'ministere':
+				$groups = array('17');
+				break;			
+			case 'societe_pharm':
+				$groups = array('16');
+				break;			
+			case 'partenaire':
+				$groups = array('6');
+				break;			
+			default:
+				$groups = array();
+				break;
+		}
+		$login_register = $this->ion_auth->register($identity, $password, $email, $login_data, $groups);
 		return $login_register;
 	}
 
@@ -581,10 +710,14 @@ class Lgedit extends CI_Controller {
 			}
 
 		}
-
-		$datas['datas']['medecin']=$this->session->userdata('user_id');
+		if($t=='constante'){
+			$datas['datas']['infirmier']=$this->session->userdata('user_id');
+		}elseif($t=='consultation'){
+			$datas['datas']['medecin']=$this->session->userdata('user_id');
+		}
 
 		//var_dump($datas['datas']); exit;
+
 
 		/*if( ($t=='ordonnance') && (!$value) ){
 

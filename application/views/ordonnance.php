@@ -135,7 +135,7 @@
 		<?php
 
 			$prods = get_produits();
-			$ps = json_decode($ordonnance['produits'],true);
+			$ps = is_array($ordonnance['produits']) ? $ordonnance['produits'] : json_decode($ordonnance['produits'],true);
 /*var_dump($ps); exit;
 echo "<br><br>";
 var_dump($prods); exit;*/

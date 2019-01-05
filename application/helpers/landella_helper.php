@@ -4,11 +4,12 @@ function stock_decrease($user,$produits,$test=false){
 	$CI =& get_instance();
 
 	if(!is_array($produits)){
+echo '1';		
 		return false;
 	}
 
 	$datas = $CI->lg->get_datas('stock',array('user' => $user),true);
-
+var_dump($datas);
 	$now = date('Y-m-d');
 	$exp = date('Y-m-d',strtotime('+30 days'));
 	$datas2 = array();
@@ -36,7 +37,7 @@ function stock_decrease($user,$produits,$test=false){
 		$qt = $pr['quantite'];		
 
 		if(!isset($ps[$p])){//var_dump($ps);
-
+echo '2';		
 			return false;
 		}
 
@@ -57,6 +58,7 @@ function stock_decrease($user,$produits,$test=false){
 					$CI->lg->set_data('stock',$pp['id'],array('quantite' => $pp['quantite']));
 			}
 		}
+var_dump($qt); exit;
 		if($qt > 0){
 			return false;
 		}
@@ -393,6 +395,10 @@ function get_educateurs(){
 
 function get_medecins(){
 	return get_group_users('medecin');
+}
+
+function get_infirmiers(){
+	return get_group_users('infirmier');
 }
 
 function get_group_users($name){

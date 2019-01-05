@@ -7,12 +7,6 @@
 	include_once(APPPATH.'/views/head.php');
 
 ?>
-<script language="javascript">
-$(document).ready(function() {
-	var href = $('.links span a').attr('href');
-	$('.links span a').attr('href', href+'/consultation');
-});
-</script>
 </head>
 
 <body>

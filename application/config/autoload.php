@@ -87,9 +87,9 @@ $autoload['drivers'] = array();
 | -------------------------------------------------------------------
 | Prototype:
 |
-|	$autoload['helper'] = array('url', 'file');
+|	$autoload['helper'] = array('url');
 */
-$autoload['helper'] = array('url','app','landella');
+$autoload['helper'] = array('url', 'file','app','landella');
 
 /*
 | -------------------------------------------------------------------

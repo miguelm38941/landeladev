@@ -77,7 +77,7 @@ class Lgedit extends CI_Controller {
 		$datas=$this->input->post();
 
 
-		if(($datas['username']=='') && ($t=='medecin')){
+		if( isset($datas['username']) && ($datas['username']=='') && ($t=='medecin')){
 			$CI =& get_instance();
 			$c1="";
 			$c2=substr(strtolower($datas['nom']), 0, 1);
@@ -97,27 +97,33 @@ class Lgedit extends CI_Controller {
 
 				$ordonnance = $this->lg->get_data('ordonnances',array('pvv' => $datas['pvv'], 'etat' => '', 'delivered' => ''),true);
 
-				$ordonnance['prepose_pharmacie'] = $datas['prepose_pharmacie'];//$this->session->userdata('user_id');
+				if($ordonnance){
+					$ordonnance['prepose_pharmacie'] = $datas['prepose_pharmacie'];//$this->session->userdata('user_id');
 
-				$prdts = json_decode($ordonnance["produits"]);
+					$prdts = json_decode($ordonnance["produits"]);
 
-				$i=0;
-				foreach ($prdts as $prdt) {
-					foreach ($prdt as $key => $value) {
+					$i=0;
+					foreach ($prdts as $prdt) {
+						foreach ($prdt as $key => $value) {
 
-						$ordonnance["produits_".$key][$i] = $value;//."_".
+							$ordonnance["produits_".$key][$i] = $value;//."_".
 
+						}
+						$i++;
 					}
-					$i++;
+
+					unset($ordonnance["produits"]);
+
+					$datas = $ordonnance;
+
+					$datas['api'] = true;
+
+					$datas['api_pharmacie'] = true;
+				}else{
+
+					echo json_encode(array('success'=>false, 'message'=>'Aucune ordonnance ne correspond aux criteres'));
+					return;
 				}
-
-				unset($ordonnance["produits"]);
-
-				$datas = $ordonnance;
-
-				$datas['api'] = true;
-
-				$datas['api_pharmacie'] = true;
 
 				//var_dump($ordonnance["produits"]); exit;
 
@@ -173,7 +179,7 @@ class Lgedit extends CI_Controller {
 
 				}		
 
-				$v = json_encode($rr);
+				$v = $rr;//json_encode($rr);
 
 				$res[$k]=$v;
 
@@ -183,7 +189,7 @@ class Lgedit extends CI_Controller {
 
 				if(is_array($v)){
 
-					$v = json_encode($v);
+					$v = $v;//json_encode($v);
 
 				}
 
@@ -258,18 +264,47 @@ class Lgedit extends CI_Controller {
 
 		//echo ' <br><br> ';
 
+		if($t=='consultation' && isset($_GET['consultid']) && isset($_GET['pvv'])) { 
+			if(is_numeric($_GET['consultid']) && is_numeric($_GET['pvv'])):
+				$idconsultation = $_GET['consultid'];
+				$pvv = $_GET['pvv'];
+				$res1=$this->lg->get_data('consultation',array('id' => $idconsultation),true);
+				$res1['user'] = $res1['agent'];
+				$res1['etat'] = 'done';
+				$this->lg->set_data('consultation',$idconsultation,$res1,false);
+				redirect('/backend/consultations/');
+			endif;
+			die('Invalid data entered.');
+		}//else{ echo 'yes';
+
 		if($t=='ordonnances' && empty($res['id'])) { //echo 'yes';
 
 			$res1=$this->lg->get_data('consultation',array('id' => $res['consultation']),true);
 
 			$res1['user'] = $res1['agent'];
 
-			$res1['etat'] = 'done';
+			//$res1['etat'] = 'done';
 
 			$this->lg->set_data('consultation',$res['consultation'],$res1,false);
 
+			$res['initiated'] = date('Y-m-d');
+
+			$res['closed'] = date('Y-m-d', strtotime('+1 month'));
+
+			$res['num_renewed'] = 0;
+
 		}//else{ echo 'yes';
 
+		// Vérifier si les constantes existent pour cette consultation
+		if($t=='constante'){
+			$constante=$this->lg->get_data('constante',array('consultation' => $res['consultation']),true);
+			if(!empty($constante)) {
+				echo 'Les constantes ont d&eacute;j&agrave; &eacute;t&eacute; prises.';
+				exit;
+			}
+		}
+
+		// Faire la nouvelle insertion
 		$return = $this->lg->set_data($t,$id,$res,false);
 
 		//$arrayOfUsersToCreate = array('pvv','medecin','educateur','zonesante','partenaire','societe_pharma');
@@ -298,7 +333,9 @@ class Lgedit extends CI_Controller {
 		}
 
 
-
+		//if($t=='constante'){
+		//	redirect('/backend/profile_pvv/'.$res['pvv'].'/consultation');
+		//}
 		//var_dump($res); exit;
 
 		if(isset($datas['api'])){
@@ -309,7 +346,7 @@ class Lgedit extends CI_Controller {
 
 		else{
 
-			echo $return;
+			echo (is_integer($return)) ? 'Enregistrement r&eacute;ussi!':'Echec de l\'enregistrement';
 
 		}
 
@@ -627,10 +664,14 @@ class Lgedit extends CI_Controller {
 			}
 
 		}
-
-		$datas['datas']['medecin']=$this->session->userdata('user_id');
+		if($t=='constante'){
+			$datas['datas']['infirmier']=$this->session->userdata('user_id');
+		}elseif($t=='consultation'){
+			$datas['datas']['medecin']=$this->session->userdata('user_id');
+		}
 
 		//var_dump($datas['datas']); exit;
+
 
 		/*if( ($t=='ordonnance') && (!$value) ){
 

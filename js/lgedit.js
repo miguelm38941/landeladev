@@ -102,7 +102,7 @@ $(document).ready(function(){
 		var table = f.data('table');
 		var datas = f.serialize();
 		$.post(window.base_url+'/lgedit/add/'+table,datas,function(data){
-			Materialize.toast('Operation avenu avec success', 3000);
+			Materialize.toast(data, 3000);
 			if(window.lgedit_form_reset != false){
 				f.get(0).reset();
 			}

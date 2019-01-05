@@ -1,5 +1,6 @@
 <html>
 <head>
+<title><?= $title ?></title>
 <?php
 include_once(APPPATH.'/views/head.php');
 //if($this->ion_auth->in_group(array('medecin'))){
@@ -48,7 +49,9 @@ $(document).ready(function(){
 	include_once(APPPATH.'/views/menu.php');
 ?>
 <main>
-<div class="container">
+<div class="container"><br><br>
+  <!--input type="text" class="datepicker picker__input invalid"-->
+        
 	<h5><?= $title ?> <?php echo ($table=='ordonnances') ?' : Consultation '.$datas['consultation']:''; ?></h5>
 	<br><br>
 <?php

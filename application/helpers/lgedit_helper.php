@@ -45,7 +45,8 @@ function lgedit_generate_cards($t,$datas=array(),$links=false){
     //$html .='<a href="'.site_url($link[1].$data['id']).'">'.$link[0].'</a>';
     
 	foreach($links as $lk => $lv){
-		$html .='<a href="'.site_url($lv.$data['id']).'">'.$lk.'</a>';
+		$html .='--'.$lv.$data['id'].'++';
+		//$html .='<a href="'.site_url($lv.$data['id']).'">'.$lk.'</a>';
 	}
     $html .='</div></div>';
 	$html .= "</div>";
@@ -235,6 +236,7 @@ function lgedit_generate_form($t,$values=array(),$visible=false){
 			$html .='</div>';
 
 		}else if($v['type'] == "checkboxs"){
+		var_dump($values); exit;
 			$vals = $v['values'];
 			if(!is_array($vals)){
 				$vals = call_user_func($vals);

@@ -30,7 +30,7 @@ class Lgedit extends CI_Controller {
 		echo "11";
 	}
 
-	public function add($t){
+	public function 88add($t){
 		$tables = $this->config->item('lgedit_tables');
 		if(!isset($tables[$t])) die("table doesnt exists");
 		$table = $tables[$t];

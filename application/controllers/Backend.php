@@ -31,6 +31,7 @@ class Backend extends CI_Controller {
 		$this->load->library('email');
 		$this->load->library('Pdf');
 		$this->load->helper('lgpdf');
+		$this->load->helper('cookie');
 
 		/*if(!$this->ion_auth->logged_in()){
 			redirect('auth/login');			
@@ -63,6 +64,12 @@ class Backend extends CI_Controller {
 		//force_download($name, $data);
 	}*/
 
+	function validate_data($input, $callback){
+		if(($input) && $callback($input)):
+			return $input;
+		endif;	
+		return false;	
+	}
 
 	function telecharger(){
 		/*$file = base_url()."telecharger/landela_app.apk"; //not public folder
@@ -364,6 +371,33 @@ class Backend extends CI_Controller {
 		$datas['table']="medecin";
 		$datas['title']="M&eacute;decins";
 		$datas['datas']=$this->lg->get_datas('medecin');
+		$datas['can_add']=true;
+		$datas['options']=array(
+				'can_edit' => true,
+				'can_delete' => false,
+				'hide_columns' => array('id','username','password','password_confirm','telephone')
+				//'dbclick' => '/taaps/projects'
+				);
+		if($this->ion_auth->in_group(array('ministere'))){
+			$datas['can_add']=false;
+			$datas['options']['can_edit']=false;
+			$datas['options']['can_delete']=false;
+		}
+		$datas['hooks_add']=true;
+		$this->load->view('lgedit/show',$datas);
+	}	
+	
+	public function infirmier(){
+		$this->ion_auth->restrict_access(array(
+			'admin',
+			'pnls',
+			'ministere',
+			'pointfocal'
+		));
+		$datas=array();
+		$datas['table']="infirmier";
+		$datas['title']="Infirmiers";
+		$datas['datas']=$this->lg->get_datas('infirmier');
 		$datas['can_add']=true;
 		$datas['options']=array(
 				'can_edit' => true,
@@ -729,8 +763,10 @@ class Backend extends CI_Controller {
 			'zonesante'
 		));
 		$filters=array();
-			$uid = $this->session->userdata('user_id');	
-			$cid = $this->session->userdata('organisation');			
+		$id = $this->validate_data($id, 'is_numeric');
+		
+		$uid = $this->session->userdata('user_id');	
+		$cid = $this->session->userdata('organisation');			
 
 		if(!$this->ion_auth->in_group(array('pnls','admin'))){
 			$filters['user'] = $cid ;
@@ -798,25 +834,37 @@ class Backend extends CI_Controller {
 			'pnls',
 			'ministere',
 			'medecin',
-			'agent'
+			'agent',
+			'infirmier'
 		));
 		$datas=array();
 		$res=$this->lg->get_datas('consultation',array('etat' => 'En attente'),true);
 		if($this->ion_auth->in_group(array('agent'))){
 			$user_group = 'agent';
 		}elseif($this->ion_auth->in_group(array('medecin'))){
+			/*echo '<pre>';
+			var_dump($res); 
+			echo '</pre>'; exit;*/
 			$user_group = 'medecin';
+		}elseif($this->ion_auth->in_group(array('infirmier'))){
+			$user_group = 'infirmier';
 		}
 		$selectedconsultList = array();
 		foreach ($res as $consult) {//$this->session->userdata('user_id')
 			if(isset($consult[$user_group]) && 
 				$consult[$user_group]==$this->session->userdata('user_id') && 
 				($consult['etat']=='En attente')
-				){			
-				array_push($selectedconsultList, $this->lg->get_data('pvv',array('id' => $consult["pvv"])));
+				){	//echo$consult['id'] . '<br>';		
+				/*if($this->ion_auth->in_group(array('medecin'))){
+					if($this->lg->get_data('constante',array('consultation'=>$consult['id']))){
+						array_push($selectedconsultList, $this->lg->get_data('pvv',array('id' => $consult["pvv"])));
+					}
+				}else{*/
+					array_push($selectedconsultList, $this->lg->get_data('pvv',array('id' => $consult["pvv"])));
+				/*}*/
 			}
 		}
-		
+
 		$datas['table']="pvv";
 		$datas['title']="Consultations en attente";
 		$datas['datas']=$selectedconsultList;
@@ -826,7 +874,7 @@ class Backend extends CI_Controller {
 				'can_edit' => false,
 				'can_delete' => false,
 				'links' => array(
-					'person' => '/backend/profile_pvv'
+					'person' => '/backend/profile_pvv/consultation'
 					),
 				'columns' => array(
 					'code' => array(
@@ -837,10 +885,10 @@ class Backend extends CI_Controller {
 				
 				//'dbclick' => '/taaps/projects'
 				);
-		if($this->ion_auth->in_group(array('agent'))){
-			$datas['options']['hide_columns']=array('id','cnib','regionsante','zonesante','nom','prenom','telephone','adresse','username','password','password_confirm','email');
+		if($this->ion_auth->in_group(array('agent','infirmier'))){
+			$datas['options']['hide_columns']=array('id','cnib','regionsante','zonesante','nom','prenom','telephone','adresse','username','password','password_confirm','email','etatcivil','sexe','birthdate','birthplace','nouveau_cas','date_depistage','date_inscription');
 		}elseif($this->ion_auth->in_group(array('medecin'))){
-			$datas['options']['hide_columns']=array('id','cnib','regionsante','zonesante','username','password','password_confirm','email');
+			$datas['options']['hide_columns']=array('id','cnib','regionsante','zonesante','username','password','password_confirm','email','adresse','etatcivil','sexe','birthdate','birthplace','nouveau_cas','date_depistage','date_inscription');
 		}
 						
 		if($this->ion_auth->in_group(array('ministere'))){
@@ -848,6 +896,7 @@ class Backend extends CI_Controller {
 			$datas['options']['can_edit']=false;
 			$datas['options']['can_delete']=false;
 		}
+		//var_dump($datas); exit;
 		$this->load->view('pvv/consultations',$datas);
 
 	}	
@@ -865,6 +914,8 @@ class Backend extends CI_Controller {
 		$filters=array();
 		$uid = $this->session->userdata('user_id');	
 		$cid = $this->session->userdata('organisation');	
+
+		$id = $this->validate_data($id, 'is_numeric');
 
 		if($action == "show"){
 			$res=$this->lg->get_data('ordonnances',array('id' => $id),true);
@@ -885,7 +936,7 @@ class Backend extends CI_Controller {
 			if($this->lg->get_data('ordonnances',array('id' => $id,'delivered' => ''))){
 
 				$datas = $this->lg->get_data('ordonnances',array('id' => $id),true);
-				$datas['produits'] = json_decode($datas['produits'],true);
+				$datas['produits'] = (is_array($datas['produits']))?$datas['produits']: json_decode($datas['produits'],true);
 				$r=stock_decrease($cid,$datas['produits'],true);
 
 				if($r){
@@ -941,8 +992,16 @@ class Backend extends CI_Controller {
 				'can_copy' => false,
 				'can_delete' => false,
 				'columns' => array(
-					'created' => array(
-						'label'  => 'Cr&eacute;e le',
+					'initiated' => array(
+						'label'  => 'Emission',
+						'type' => 'text'
+						),
+					'closed' => array(
+						'label'  => 'Validit&eacute;',
+						'type' => 'text'
+						),
+					'num_renewed' => array(
+						'label'  => 'Renouvell&eacute;',
 						'type' => 'text'
 						),
 					'delivered' => array(
@@ -1012,10 +1071,11 @@ class Backend extends CI_Controller {
 			'zonesante'
 		));
 		$datas=array();
-
 		$filters=array();
+		$id = $this->validate_data($id, 'is_numeric');
 		$uid = $this->session->userdata('user_id');	
-		$cid = $this->session->userdata('organisation');	
+		$cid = $this->session->userdata('organisation');
+
 		if($action == "add_societe_pharma"){
 			$id = $this->input->post('id');
 			$sc = $this->input->post('societe_pharma');
@@ -1251,8 +1311,10 @@ exit;*/
 		));
 		$datas=array();
 		$filters=array();
+		$id = $this->validate_data($id, 'is_numeric');
 		$uid = $this->session->userdata('user_id');	
 		$cid = $this->session->userdata('organisation');	
+
 		if($action == "add_societe_pharma"){
 			$id = $this->input->post('id');
 			$sc = $this->input->post('societe_pharma');
@@ -1505,7 +1567,9 @@ exit;*/
 			'ministere',
 			'agent',
 			'medecin',
-			'pvv'
+			'pvv',
+			'pharmacie',
+			'infirmier'
 		));
 		$id2=$this->input->post('search');
 		if($id == false && $id2 == false){
@@ -1525,7 +1589,7 @@ exit;*/
 		$obs=$this->lg->get_datas('observations',array('pvv' => $id),true);
 
 		$consult=$this->lg->get_data('consultation',array('pvv' => $id, 'etat' => 'En attente'));
-		//var_dump($consult); exit;
+		$constantes=$this->lg->get_data('constante',array('consultation'=>$consult['id']));
 		//if($this->session->userdata('user_id')=$consult['medecin']){
 
 		/************************************************/
@@ -1590,6 +1654,9 @@ exit;*/
 			}
 			elseif($this->ion_auth->in_group(array('ministere'))){
 				$usergroup = 'ministere';
+			}
+			elseif($this->ion_auth->in_group(array('infirmier'))){
+				$usergroup = 'infirmier';
 			}else{
 				$usergroup = 'lmsc';
 			}
@@ -1597,7 +1664,10 @@ exit;*/
 				$consult=$this->lg->get_data('consultation',array('id'=>$id_consultation));
 			}
 
-			$this->load->view('pvv/profil',array('infos' => $res, 'latestOrdonnance' => $datas['datas'][0], 'consultation' => $consult, 'observations' => $obs, 'usergroup' => $usergroup));
+			$latestOrdonnance = !empty($datas['datas'])?$datas['datas'][0]:'';
+
+		//var_dump($constantes); exit;
+			$this->load->view('pvv/profil',array('infos' => $res, 'latestOrdonnance' => $latestOrdonnance, 'constantes' => $constantes, 'consultation' => $consult, 'observations' => $obs, 'usergroup' => $usergroup));
 			return;
 		}
 		//var_dump($res); exit;
@@ -1612,10 +1682,13 @@ exit;*/
 
 	public function pvv($action=false,$id=false){
 		$this->ion_auth->restrict_access(array('admin','pnls',
-			'ministere','medecin','educateur'));
+			'ministere','medecin','educateur','agent','pharmacie'));
 		$datas=array();
 		$filters=array();
 		if($action == "educateur"){
+			//$this->form_validation->set_rules('id', 'PVV', 'trim');
+			//$this->form_validation->set_rules('id', 'PVV', 'callback_validate_data[is_numeric]');
+			//$this->form_validation->set_rules('educateur', 'Relais communautaire', 'trim|required');
 			$id = $this->input->post('id');
 			$edu = $this->input->post('educateur');
 			$this->lg->set_data('pvv',$id,array('educateur' => $edu));
@@ -1675,7 +1748,7 @@ exit;*/
 		$datas['options']=array(
 				'can_edit' => true,
 				'can_delete' => false,
-				'hide_columns' => array('id','nom','prenom','cnib','username','password','password_confirm','email','adresse','telephone'),
+				'hide_columns' => array('id','cnib','username','password','password_confirm','email','adresse','telephone','etatcivil','sexe','birthdate','birthplace','nouveau_cas','date_depistage','date_inscription'),
 				'links' => array(
 					'person' => '/backend/profile_pvv'
 					),
@@ -1687,8 +1760,18 @@ exit;*/
 					)
 				//'dbclick' => '/taaps/projects'
 				);
+		if(!$this->ion_auth->in_group(array('admin','pnls'))){
+			array_push($datas['options']['hide_columns'], 'nom');
+			array_push($datas['options']['hide_columns'], 'prenom');
+		}
 		if($this->ion_auth->in_group(array('educateur'))){
 			array_push($datas['options']['hide_columns'], 'educateur');
+		}
+		if($this->ion_auth->in_group(array('agent','pharmacie'))){
+			array_push($datas['options']['hide_columns'], 'educateur');
+			array_push($datas['options']['hide_columns'], 'province');
+			array_push($datas['options']['hide_columns'], 'ville');
+			array_push($datas['options']['hide_columns'], 'zonesante');
 		}
 		/*if($action == "ordonnances"){
 			$datas['table']="ordonnances";
@@ -1718,6 +1801,166 @@ exit;*/
 			$datas['options']['can_edit']=false;
 			$datas['options']['can_delete']=false;
 		}
+		$this->load->view('lgedit/show',$datas);
+	}
+
+	public function prescription_examens($id=false){
+		$this->ion_auth->restrict_access(array('admin','pnls',
+			'ministere','medecin','laborantin'));
+		$datas=array();
+
+		if($this->validate_data($id, 'is_numeric')){
+			$prescription=$this->lg->get_data('prescription_examens',array('id'=>$id),true);
+			foreach ($prescription as $key=>$val):
+				if($key=='medecin'):
+					$medecin=$this->lg->get_user($val);
+					$datas['datas']['medecin']=$medecin['first_name']. ' ' . $medecin['last_name'];
+					$datas['datas']['medecinid']=$val;
+				elseif($key=='pvv'):
+					$pvv=$this->lg->get_data('pvv',array('id'=>$val),true);
+					$datas['datas']['pvv']=$pvv['prenom']. ' ' . $pvv['nom'];
+					$datas['datas']['pvvid']=$val;
+				else:
+					$datas['datas'][$key]=$val;
+				endif;
+			endforeach;
+			unset($prescription);
+			$this->load->view('prescription_examens',$datas);
+			return;
+		}
+
+		$filters=array();//'pvv' => $id
+		$prescriptions=$this->lg->get_datas('prescription_examens',$filters,true);
+		foreach ($prescriptions as $k=>$v):
+			$medecin=$this->lg->get_user($v['medecin']);
+			$prescriptions[$k]['medecin']=$medecin['first_name']. ' ' . $medecin['last_name'];
+			//var_dump($medecin); echo '<br><br>';
+		endforeach;
+		$datas['table']="prescription_examens";
+		$datas['title']="Les prescription d'examens";
+		$datas['datas']=$prescriptions;
+		$datas['can_add']=true;
+		$datas['options']=array(
+				'can_add' => false,
+				'can_edit' => false,
+				'can_delete' => false,
+				'hide_columns' => array('id'),
+				'buttons' => array(
+						'r&eacute;sultats' => '/backend/prescription_examens'
+						),
+				'columns' => array()
+				//'dbclick' => '/taaps/projects'
+				);
+		$this->load->view('lgedit/show',$datas);
+	}
+
+	public function resultat_examens($show=false,$id=false){
+		$this->ion_auth->restrict_access(array('admin','pnls',
+			'ministere','medecin','laborantin'));
+		$datas=array();
+
+		if( !$show && empty($this->input->get('selected_pvv')) && !$this->validate_data($this->input->get('selected_pvv'), 'is_numeric')){
+			die('Aucune entr&eacute;e ne correspond &agrave; ce que vous recherchez.');
+		}
+
+		if(($show=='show')&&$this->validate_data($id, 'is_numeric')){
+			$resultat=$this->lg->get_data('resultat_examens',array('id'=>$id),true);
+			$prescription=$this->lg->get_data('prescription_examens',array('id'=>$resultat['prescription']),true);
+			$medecin=$this->lg->get_user($prescription['medecin']);
+			$datas['datas']['medecin']=$medecin['first_name']. ' ' . $medecin['last_name'];
+			foreach ($resultat as $key=>$val):
+				if($key=='pvv'):
+					$pvv=$this->lg->get_data('pvv',array('id'=>$val),true);
+					$datas['datas']['pvv']=$pvv['prenom']. ' ' . $pvv['nom'];
+					$datas['datas']['pvvcode']=$pvv['code'];
+					$datas['datas']['pvvid']=$val;
+				else:
+					$datas['datas'][$key]=$val;
+				endif;
+			endforeach;
+			unset($resultat);
+			$this->load->view('resultat_examens',$datas);
+			return;
+		}/**/
+
+		$filters=array('pvv' => $this->validate_data($this->input->get('selected_pvv'), 'is_numeric'));
+		$resultats=$this->lg->get_datas('resultat_examens',$filters,true);
+		foreach ($resultats as $key=>$resultat):
+			foreach ($resultat as $k=>$v):
+				if($k=='pvv'):
+					$pvv=$this->lg->get_data('pvv',array('id'=>$v),true);
+					$resultats[$key][$k]=$pvv['code'];
+				elseif ($k=='consultation'):
+					//$consultation=$this->lg->get_data('consultation',array('id'=>$v['consultation']),true);
+					//$resultats[$key][$k]=$consultation[''];
+				elseif ($k=='prescription'):
+					//$prescription=$this->lg->get_data('prescription_examens',array('id'=>$v['prescription']),true);
+				elseif ($k=='examen'):
+				else:
+					//$results[$k]=$v;
+				endif;
+			endforeach;/**/
+		endforeach;/**/
+		//unset($resultats);
+		$datas['table']="resultat_examens";
+		$datas['title']="Les resultats d'examens";
+		$datas['datas']=$resultats;
+		$datas['can_add']=true;
+		$datas['options']=array(
+				'can_add' => false,
+				'can_edit' => false,
+				'can_delete' => false,
+				'hide_columns' => array('id'),
+				'buttons' => array(
+						'Consulter' => '/backend/resultat_examens/show'
+						),
+				'columns' => array()
+				//'dbclick' => '/taaps/projects'
+				);
+		$this->load->view('lgedit/show',$datas);
+	}
+
+	public function scan_pvv($id=false){
+		$this->ion_auth->restrict_access(array('admin','pnls',
+			'ministere','medecin','educateur','agent','pharmacie','laborantin'));
+		$datas=array();
+		$filters=array();
+
+		if(($id) && is_numeric($id)){
+			$datas['table']="pvv";
+			$datas['title']="V&eacute;rifier l\identit&eacute;";
+			$filters=array('id' => $id);
+			$res=$this->lg->get_data('pvv',$filters,true);
+/*var_dump($res); 
+echo '<br><br>';*/
+
+			/************************************************/
+			/** FINGERPRINT SCANNING ***/
+			$finger = $this->getUserFinger($res['username']);
+//var_dump($finger); exit;
+			$this->load->view('pvv/scanner_pvv',array('pvvdatas' => $res, 'finger' => $finger));
+			return;
+		}
+
+		$datas['table']="pvv";
+		$datas['title']="pvv";
+		$datas['datas']=$this->lg->get_datas('pvv',$filters,true);
+		$datas['can_add']=true;
+		$datas['options']=array(
+				'can_edit' => false,
+				'can_delete' => false,
+				'hide_columns' => array('id','nom','prenom','cnib','username','password','password_confirm','email','adresse','telephone', 'educateur', 'province', 'ville', 'zonesante'),
+				'buttons' => array(
+						'scanner' => '/backend/scan_pvv'
+						),
+				'columns' => array(
+					'code' => array(
+						'label' => 'Code',
+						'type' => 'text'
+						)
+					)
+				//'dbclick' => '/taaps/projects'
+				);
 		$this->load->view('lgedit/show',$datas);
 	}
 
@@ -2004,6 +2247,9 @@ var_dump($device); exit;*/
 			/** IDENTITY VERIFICATION */
 			/** YOUR CODE HERE */
 			/************************************/
+			//$agentId = get_cookie('landela_user');
+			//var_dump($agentId); exit;
+			//$this->save_cookie($agentId);
 			if (isset($_POST['VerPas']) && !empty($_POST['VerPas'])) {
 				$this->process_verification($_POST['VerPas']);
 			}
@@ -2018,11 +2264,11 @@ var_dump($device); exit;*/
 				$user_name	= $_GET['user_name'];
 				$time		= date('Y-m-d H:i:s', strtotime($_GET['time']));
 				
-				echo $user_name." login success on ".date('Y-m-d H:i:s', strtotime($time));
+				echo "PVV identifi&eacute; avec succ&egrave;s ";//.date('Y-m-d H:i:s', strtotime($time));
 				
 			} else {
 					
-				$msg = "Parameter invalid..";
+				$msg = "Parametre invalide..";
 				
 				echo "$msg";
 				
@@ -2121,15 +2367,15 @@ var_dump($device); exit;*/
 				$msg='Ce template existe.';			
 			}
 			
-			echo $msg;
-			//redirect(base_url()."backend/fingerprint/messages?msg=$msg");
+			//echo $msg;
+			echo base_url()."backend/fingerprint/messages?msg=$msg";
 			
 		} else {
 			
 			$msg = "Parameter invalid..";
 			
-			//echo base_url()."backend/fingerprint/messages?msg=$msg";
-			echo $msg;
+			echo base_url()."backend/fingerprint/messages?msg=$msg";
+			//echo $msg;
 			//redirect(base_url()."backend/fingerprint/messages?msg=$msg");
 		}
 
@@ -2158,15 +2404,77 @@ var_dump($device); exit;*/
 			
 			$log = $this->createLog($user_name, $time, $sn);
 			
-			if ($log == 1) {
-			
+			if ($log == 1) {	
+
+				//$agentId = $this->extract_cookie(); 
+				$agentId = $this->extract_cookie('agent_id'); //get_cookie('landela_user');
+				$groupe = $this->extract_cookie('groupe'); //get_cookie('landela_user');
+
+				if($agentId && is_numeric($agentId)){	
+					if($groupe=='agent'){
+						// Creer nouvelle consultation
+						$content = http_build_query (array (
+							'pvv' => $user_id,
+							'agent' => $agentId,
+							'api' => 'true'
+						));
+
+						$context = stream_context_create (array (
+							'http' => array (
+							'method' => 'POST',
+							'content' => $content,
+						)
+						));
+
+						$result = file_get_contents(base_url().'lgedit/add/consultation', null, $context); 
+					}			
+					if($groupe=='pharmacie'){
+						// editer ordonnance
+						$content = http_build_query (array (
+							'pvv' => $user_id,
+							'prepose_pharmacie' => $agentId,
+							'api' => 'true',
+							'api_pharmacie' => 'true'
+						));
+
+						$context = stream_context_create (array (
+							'http' => array (
+							'method' => 'POST',
+							'content' => $content,
+						)
+						));
+
+						$result = file_get_contents(base_url().'lgedit/add/ordonnances', null, $context); 
+					}			
+					if($groupe=='laborantin'){
+						// editer ordonnance
+						$content = http_build_query (array (
+							'pvv' => $user_id,
+							'laborantin' => $agentId,
+							'api' => 'true',
+							'api_laborantin' => 'true'
+						));
+
+						$context = stream_context_create (array (
+							'http' => array (
+							'method' => 'POST',
+							'content' => $content,
+						)
+						));
+
+						$result = file_get_contents(base_url().'lgedit/add/prescription_examens', null, $context); 
+					}			
+				}
+
 				//echo $msg;
-				//echo base_url()."backend/fingerprint/messages?user_name=$user_name&time=$time";
+				echo base_url()."backend/fingerprint/messages?user_name=$user_name&time=$time";
 				//echo $base_path."backend/fingerprint/messages?";
 			
 			} else {
 			
 				//echo $msg;
+				echo base_url()."backend/fingerprint/fveriffailed";
+				//echo base_url()."backend/fingerprint/fverifsucceed";
 				//echo base_url()."backend/fingerprint/messages?msg=$log";
 				//echo $base_path."backend/fingerprint/messages?msg=$log";
 				
@@ -2183,6 +2491,68 @@ var_dump($device); exit;*/
 		}
 
 	}
+
+
+	public function save_cookie($agentId){
+		$ip = $this->getRealIpAddr();
+		$ins = $this->db->insert('finger_cookie',array('agent_id' => $agentId, 'ip' => $ip));
+	}
+
+	/*public function extract_cookie(){
+		$agentId = get_cookie('landela_user');
+		$ip = $this->getRealIpAddr();
+
+		$this->db->select("*");
+		$this->db->where(array("ip"=>$ip,"agent_id"=>$agentId));
+		$query = $this->db->get("finger_cookie",1,0);
+
+		if($query->num_rows() > 0) {
+		    $connected_user['agent_id'] = $query->row("agent_id");
+		    $connected_user['groupe'] = $query->row("groupe");
+		    return $connected_user;    
+		} else {
+		    return FALSE;
+		}
+	}*/
+
+	public function extract_cookie($output){
+		$agentId = get_cookie('landela_user');
+		$ip = $this->getRealIpAddr();
+
+		$this->db->select("*");
+		$this->db->where("ip", $ip);
+		$query = $this->db->get("finger_cookie",1,0);
+
+		if($query->num_rows() > 0) {
+			if($output=='agent_id'){
+				$return = $query->row("agent_id");
+			}
+			elseif($output=='groupe'){
+				$return = $query->row("groupe");
+			}
+		    return $return;    
+		} else {
+		    return FALSE;
+		}
+	}
+
+
+function getRealIpAddr()
+{
+    if (!empty($_SERVER['HTTP_CLIENT_IP']))   //check ip from share internet
+    {
+      $ip=$_SERVER['HTTP_CLIENT_IP'];
+    }
+    elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR']))   //to check ip is pass from proxy
+    {
+      $ip=$_SERVER['HTTP_X_FORWARDED_FOR'];
+    }
+    else
+    {
+      $ip=$_SERVER['REMOTE_ADDR'];
+    }
+    return $ip;
+}
 
 	public function test(){
 		//echo 2;

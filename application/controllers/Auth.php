@@ -62,6 +62,14 @@ class Auth extends MY_Controller {
 
 			if ($this->ion_auth->login($this->input->post('identity'), $this->input->post('password'), $groupe, $remember))
 			{ 
+//$this->input->ip_address();
+//	public function save_cookie($agentId){
+				if(($groupe=='agent') || ($groupe=='pharmacie')){					
+					$ip = $this->getRealIpAddr();
+					$agentId = $this->session->userdata('user_id'); //get_cookie('landela_user');
+					$ins = $this->db->insert('finger_cookie',array('agent_id' => $agentId, 'ip' => $ip, 'groupe' => $groupe));
+				}
+//	}
 				//redirect them back to the home page
 				$this->session->set_flashdata('message', $this->ion_auth->messages());
 				redirect('/', 'refresh');
@@ -82,7 +90,7 @@ class Auth extends MY_Controller {
 			// Prepare groups select
 			$groups=$this->ion_auth->groups()->result_array();
 			$grouplist = array(''=>'Je suis ...');
-			$hiddenGroups = array('members','ville','province','societe_pharma','admin');
+			$hiddenGroups = array('members','ville','province','societe_pharma','admin','pointfocal');
 			foreach ($groups as $group):
 				if(!empty($group["description"]) && !in_array($group["name"], $hiddenGroups)):
 					$tempgroup[$group["name"]] = $group["description"];
@@ -109,10 +117,31 @@ class Auth extends MY_Controller {
 		}
 	}
 
+
+function getRealIpAddr()
+{
+    if (!empty($_SERVER['HTTP_CLIENT_IP']))   //check ip from share internet
+    {
+      $ip=$_SERVER['HTTP_CLIENT_IP'];
+    }
+    elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR']))   //to check ip is pass from proxy
+    {
+      $ip=$_SERVER['HTTP_X_FORWARDED_FOR'];
+    }
+    else
+    {
+      $ip=$_SERVER['REMOTE_ADDR'];
+    }
+    return $ip;
+}
+
 	// log the user out
 	public function logout()
 	{
 		$this->data['title'] = "Logout";
+
+		$agentId = $this->session->userdata('user_id'); //get_cookie('landela_user');
+		$this->db->delete('finger_cookie',array('agent_id' => $agentId));
 
 		// log the user out
 		$logout = $this->ion_auth->logout();
@@ -938,8 +967,10 @@ class Auth extends MY_Controller {
 		foreach ($zonesante as $pharmacie) {
 			$select_options[$pharmacie['id']] = isset($pharmacie['titre'])?$pharmacie['titre']:$pharmacie['nom'];
 		}
-		asort($select_options);
-		return $select_options;
+		if(isset($select_options)){
+			asort($select_options);
+			return $select_options;
+		}
 	}
 	// create a new group
 	public function create_group()

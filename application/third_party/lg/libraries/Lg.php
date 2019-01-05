@@ -24,10 +24,10 @@ class Lg {
 		}*/
         $CI =& get_instance();
 		$datas = $CI->mlg->get_table_datas($table,$filters,$metadatas,$exists);
-		if(!$exists){
+		if(!$exists){ 
 			$res = $this->_filter($datas,$filters,$metadatas);
 			return $res;
-		}else{
+		}else{ 
 			return $datas;
 		}
 	}
@@ -47,6 +47,11 @@ class Lg {
 	function count_finger($pvvid){
 		$CI =& get_instance();
 		return $CI->mlg->get_finger_count($pvvid);
+	}
+	
+	function get_user_by_entityid($entityid){
+		$CI =& get_instance();
+		return $CI->mlg->get_user_by_entityid($entityid);
 	}
 	
 	function get_user_by_username($username){

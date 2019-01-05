@@ -4,7 +4,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 
 
-class Api extends CI_Controller {
+class Apimobile extends CI_Controller {
 
 
 
@@ -63,6 +63,12 @@ class Api extends CI_Controller {
 
 
 	public function index(){
+
+		echo "11";
+
+	}
+
+	public function pvv_ordonnances(){
 
 		echo "11";
 

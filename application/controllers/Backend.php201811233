@@ -22,6 +22,8 @@ class Backend extends CI_Controller {
 	private $global_access = array('pnls','admin','ministere');
 	private $can_command = array('pharmacie','zonesante','regionsante');
 	private $haveStock = array('pharmacie','regionsante','zonesante');
+	private $time_limit_ver = '10';
+	private $time_limit_reg = '15';
 
 	function __construct(){
 		parent::__construct();
@@ -29,10 +31,11 @@ class Backend extends CI_Controller {
 		$this->load->library('email');
 		$this->load->library('Pdf');
 		$this->load->helper('lgpdf');
+		$this->load->helper('cookie');
 
-		if(!$this->ion_auth->logged_in()){
+		/*if(!$this->ion_auth->logged_in()){
 			redirect('auth/login');			
-		}
+		}*/
 		/*
 		$this->client_id = false;
 		if($this->ion_auth->in_group('clients')){
@@ -150,7 +153,7 @@ class Backend extends CI_Controller {
 		$datas['options']=array(
 				'can_edit' => true,
 				'can_delete' => false,
-				'hide_columns' => array('id'),
+				'hide_columns' => array('id','dosage','specificite'),
 				'links' => array(
 					'assignment' => '/backend/produits/show'
 					)
@@ -165,6 +168,46 @@ class Backend extends CI_Controller {
 		$this->load->view('lgedit/show',$datas);
 	}
 	
+	public function province(){
+		$datas=array();
+		$datas['table']="province";
+		$datas['title']="Province";
+		$datas['datas']=$this->lg->get_datas('province');
+		$datas['can_add']=true;
+		$datas['options']=array(
+				'can_edit' => true,
+				'can_delete' => false,
+				'hide_columns' => array('id')
+				//'dbclick' => '/taaps/projects'
+				);
+		if($this->ion_auth->in_group(array('ministere'))){
+			$datas['can_add']=false;
+			$datas['options']['can_edit']=false;
+			$datas['options']['can_delete']=false;
+		}
+		$this->load->view('lgedit/show',$datas);
+	}	
+	
+	public function ville(){
+		$datas=array();
+		$datas['table']="ville";
+		$datas['title']="Ville";
+		$datas['datas']=$this->lg->get_datas('ville');
+		$datas['can_add']=true;
+		$datas['options']=array(
+				'can_edit' => true,
+				'can_delete' => false,
+				'hide_columns' => array('id')
+				//'dbclick' => '/taaps/projects'
+				);
+		if($this->ion_auth->in_group(array('ministere'))){
+			$datas['can_add']=false;
+			$datas['options']['can_edit']=false;
+			$datas['options']['can_delete']=false;
+		}
+		$this->load->view('lgedit/show',$datas);
+	}	
+	
 	public function regionsante(){
 		$datas=array();
 		$datas['table']="regionsante";
@@ -174,7 +217,7 @@ class Backend extends CI_Controller {
 		$datas['options']=array(
 				'can_edit' => true,
 				'can_delete' => false,
-				'hide_columns' => array('id','username','password','password_confirm')
+				'hide_columns' => array('id','username','password','password_confirm','email','telephone','nom','prenom','adresse')
 				//'dbclick' => '/taaps/projects'
 				);
 		if($this->ion_auth->in_group(array('ministere'))){
@@ -194,7 +237,7 @@ class Backend extends CI_Controller {
 		$datas['options']=array(
 				'can_edit' => true,
 				'can_delete' => false,
-				'hide_columns' => array('id','username','password','password_confirm')
+				'hide_columns' => array('id','username','password','password_confirm','adresse','email','telephone','nom','prenom')
 				//'dbclick' => '/taaps/projects'
 				);
 		if($this->ion_auth->in_group(array('ministere'))){
@@ -221,7 +264,7 @@ class Backend extends CI_Controller {
 		$datas['options']=array(
 				'can_edit' => true,
 				'can_delete' => false,
-				'hide_columns' => array('id','username','password','password_confirm')
+				'hide_columns' => array('id','username','password','password_confirm','cnib')
 				//'dbclick' => '/taaps/projects'
 				);
 		if($this->ion_auth->in_group(array('ministere'))){
@@ -262,7 +305,8 @@ class Backend extends CI_Controller {
 		$this->ion_auth->restrict_access(array(
 			'admin',
 			'pnls',
-			'ministere'
+			'ministere',
+			'pointfocal'
 		));
 		$datas=array();
 		$datas['table']="pharmacie";
@@ -272,7 +316,7 @@ class Backend extends CI_Controller {
 		$datas['options']=array(
 				'can_edit' => true,
 				'can_delete' => false,
-				'hide_columns' => array('id')
+				'hide_columns' => array('id','type','username','email','telephone','contact')
 				//'dbclick' => '/taaps/projects'
 				);
 		if($this->ion_auth->in_group(array('ministere'))){
@@ -314,7 +358,8 @@ class Backend extends CI_Controller {
 		$this->ion_auth->restrict_access(array(
 			'admin',
 			'pnls',
-			'ministere'
+			'ministere',
+			'pointfocal'
 		));
 		$datas=array();
 		$datas['table']="medecin";
@@ -324,7 +369,7 @@ class Backend extends CI_Controller {
 		$datas['options']=array(
 				'can_edit' => true,
 				'can_delete' => false,
-				'hide_columns' => array('id')
+				'hide_columns' => array('id','username','password','password_confirm','telephone')
 				//'dbclick' => '/taaps/projects'
 				);
 		if($this->ion_auth->in_group(array('ministere'))){
@@ -350,7 +395,7 @@ class Backend extends CI_Controller {
 		$datas['options']=array(
 				'can_edit' => false,
 				'can_delete' => false,
-				'hide_columns' => array('id')
+				'hide_columns' => array('id','adresse','type','contact','telephone','username')
 				//'dbclick' => '/taaps/projects'
 				);
 		if(!$this->ion_auth->in_group(array('partenaire'))){
@@ -546,7 +591,7 @@ class Backend extends CI_Controller {
 				}	
 			}	
 		}/**/
-				
+
 		$res=array();
 		foreach($ss['produits'] as $r){
 			$res[]=array(
@@ -593,6 +638,7 @@ class Backend extends CI_Controller {
 				'can_delete' => false,
 				'hide_columns' => array('id','company','quantite')
 				);
+			
 		if($this->ion_auth->in_group(array('ministere'))){
 			$datas['can_add']=false;
 			$datas['options']['can_edit']=false;
@@ -803,6 +849,7 @@ class Backend extends CI_Controller {
 			$datas['options']['can_edit']=false;
 			$datas['options']['can_delete']=false;
 		}
+		//var_dump($datas); exit;
 		$this->load->view('pvv/consultations',$datas);
 
 	}	
@@ -845,7 +892,8 @@ class Backend extends CI_Controller {
 
 				if($r){
 					stock_decrease($cid,$datas['produits']);
-					$this->lg->set_data('ordonnances',$id,array('prepose_pharmacie' => $uid,'delivered' => date('Y-m-d H:i:s'), 'etat' => 'Livree'),false);
+					$this->lg->set_data('ordonnances',$id,array('prepose_pharmacie' => $uid,'delivered' => date('Y-m-d H:i:s'), 'etat' => 'tobereceived'),false);
+					//$this->lg->set_data('ordonnances',$id,array('prepose_pharmacie' => $uid,'delivered' => date('Y-m-d H:i:s'), 'etat' => 'Livree'),false);
 				}else{
 					redirect('/backend/ordonnances/?err=noStock');
 					//echo "<h1>Stock non disponible</h1>";
@@ -854,7 +902,19 @@ class Backend extends CI_Controller {
 				}
 			}
 			redirect('/backend/ordonnances');
+		}
 
+		if($action == "receive"){
+			//if($this->lg->get_data('ordonnances',array('id' => $id,'delivered' => ''))){
+			$datas = $this->lg->get_data('ordonnances',array('id' => $id),true);
+			$this->lg->set_data('ordonnances',$id,array('etat' => 'Livree'),false);
+			//$this->lg->set_data('ordonnances',$id,array('prepose_pharmacie' => $uid,'delivered' => date('Y-m-d H:i:s'), 'etat' => 'Livree'),false);
+			//}
+		}
+
+		if($action == "receive"){
+			$datas = $this->lg->get_data('ordonnances',array('id' => $id),true);
+			$this->lg->set_data('ordonnances',$id,array('etat' => 'Livree'),false);
 		}
 
 		if($action == "pvv"){
@@ -868,19 +928,17 @@ class Backend extends CI_Controller {
 
 		if($this->ion_auth->in_group(array('medecin'))){
 			$filters['user']=$uid;
+		}elseif($this->ion_auth->in_group(array('pvv'))){
+			$username = $this->session->userdata('username');
+			$pvv=$this->lg->get_data('pvv',array('username' => $username),true);
+			$filters['pvv']=$pvv['id'];
 		}
-		//var_dump($ordonnances); exit;
-		/*if(isset($filters['user']))
-			foreach($ordonnances as $key=>$value){
-				$user = $this->lg->get_user($filters['user']);
-				$medecin['id'] = $filters['user'];
-				$medecin['username'] = $user['username'];
-				$ordonnances[$key]['medecin'] = $medecin;
-			}*/
+
 		$datas['table']="ordonnances";
 		$datas['title']="Ordonnances";
-		$datas['can_add']=true;
+		$datas['can_add']=false;
 		$datas['options']=array(
+				'can_add' => false,
 				'can_edit' => false,
 				'can_copy' => false,
 				'can_delete' => false,
@@ -916,11 +974,13 @@ class Backend extends CI_Controller {
 			//$filters['delivered']='!isset';
 		}
 
-		if(!$this->ion_auth->in_group(array('medecin'))){
-			$datas['can_add']=false;
+		
+		if($this->ion_auth->in_group(array('medecin','pvv'))){
+			unset($filters['prepose_pharmacie']);
 		}
 
 		$ordonnances = $this->lg->get_datas('ordonnances',$filters,true);
+
 		foreach ($ordonnances as $k=>$ordonnance) {
 			if(isset($ordonnance['prepose_pharmacie'])){
 				$ordonnances[$k]['prepose_pharmacie']=$this->lg->get_user_company($ordonnance['prepose_pharmacie']);
@@ -928,12 +988,16 @@ class Backend extends CI_Controller {
 			
 		}
 		//echo '<pre>';
-		//var_dump($datas); echo '</pre>'; echo '--------'; exit;
 		$datas['datas']=$ordonnances;
 		if($this->ion_auth->in_group(array('ministere'))){
-			$datas['can_add']=false;
 			$datas['options']['can_edit']=false;
 			$datas['options']['can_delete']=false;
+		}
+		if($this->ion_auth->in_group(array('pharmacie'))){
+			$datas['group']='pharmacie';
+		}
+		elseif($this->ion_auth->in_group(array('pvv'))){
+			$datas['group']='pvv';
 		}
 		$this->load->view('lgedit/show',$datas);
 	}	
@@ -950,6 +1014,7 @@ class Backend extends CI_Controller {
 			'zonesante'
 		));
 		$datas=array();
+
 		$filters=array();
 		$uid = $this->session->userdata('user_id');	
 		$cid = $this->session->userdata('organisation');	
@@ -1114,7 +1179,6 @@ exit;*/
 					)
 				//'dbclick' => '/taaps/projects'
 				);
-
 		if($action == "filter"){
 			$datas['options']['can_edit']=false;
 			$datas['options']['hide_columns'][]="created";
@@ -1436,14 +1500,15 @@ exit;*/
 		$this->load->view('lgedit/show',$datas);
 	}	
 
-	public function profile_pvv($id=false, $param1=false){
+	public function profile_pvv($id=false, $param1=false,$id_consultation=false){
 		$this->ion_auth->restrict_access(array(
 			'admin',
 			'pnls',
 			'ministere',
 			'agent',
 			'medecin',
-			'pvv'
+			'pvv',
+			'pharmacie'
 		));
 		$id2=$this->input->post('search');
 		if($id == false && $id2 == false){
@@ -1463,8 +1528,13 @@ exit;*/
 		$obs=$this->lg->get_datas('observations',array('pvv' => $id),true);
 
 		$consult=$this->lg->get_data('consultation',array('pvv' => $id, 'etat' => 'En attente'));
+		//var_dump($consult); exit;
 		//if($this->session->userdata('user_id')=$consult['medecin']){
-		
+
+		/************************************************/
+		/** FINGERPRINT SCANNING ***/
+
+		$finger = $this->getUserFinger($res['username']);
 
 		$filters=array('pvv' => $res['id']);
 
@@ -1515,7 +1585,24 @@ exit;*/
 			elseif($this->ion_auth->in_group(array('agent'))){
 				$usergroup = 'agent';
 			}
-			$this->load->view('pvv/profil',array('infos' => $res, 'consultation' => $consult, 'observations' => $obs, 'usergroup' => $usergroup));
+			elseif($this->ion_auth->in_group(array('lmsc'))){
+				$usergroup = 'lmsc';
+			}
+			elseif($this->ion_auth->in_group(array('pnls'))){
+				$usergroup = 'pnls';
+			}
+			elseif($this->ion_auth->in_group(array('ministere'))){
+				$usergroup = 'ministere';
+			}else{
+				$usergroup = 'lmsc';
+			}
+			if($id_consultation){
+				$consult=$this->lg->get_data('consultation',array('id'=>$id_consultation));
+			}
+
+			$latestOrdonnance = !empty($datas['datas'])?$datas['datas'][0]:'';
+
+			$this->load->view('pvv/profil',array('infos' => $res, 'latestOrdonnance' => $latestOrdonnance, 'consultation' => $consult, 'observations' => $obs, 'usergroup' => $usergroup));
 			return;
 		}
 		//var_dump($res); exit;
@@ -1524,13 +1611,13 @@ exit;*/
 			$datas['options']['can_edit']=false;
 			$datas['options']['can_delete']=false;
 		}
-		$this->load->view('pvv/profil',array('infos' => $res, 'ordonnances' => $datas, 'observations' => $obs));
+		$this->load->view('pvv/profil',array('infos' => $res, 'ordonnances' => $datas, 'observations' => $obs, 'finger' => $finger));
 
 	}
 
 	public function pvv($action=false,$id=false){
 		$this->ion_auth->restrict_access(array('admin','pnls',
-			'ministere','medecin','educateur'));
+			'ministere','medecin','educateur','agent','pharmacie'));
 		$datas=array();
 		$filters=array();
 		if($action == "educateur"){
@@ -1547,7 +1634,7 @@ exit;*/
 			// Set consultation to "done"
 			$res1=$this->lg->get_data('consultation',array('id' => $id_consultation),true);
 			$res1['user'] = $res1['agent'];
-			$res1['etat'] = 'done';
+			//$res1['etat'] = 'done';
 			$this->lg->set_data('consultation',$id_consultation,$res1,false);
 			
 			// Save observations
@@ -1593,7 +1680,7 @@ exit;*/
 		$datas['options']=array(
 				'can_edit' => true,
 				'can_delete' => false,
-				'hide_columns' => array('id','nom','prenom','cnib','username','password','password_confirm'),
+				'hide_columns' => array('id','nom','prenom','cnib','username','password','password_confirm','email','adresse','telephone'),
 				'links' => array(
 					'person' => '/backend/profile_pvv'
 					),
@@ -1801,7 +1888,7 @@ exit;*/
 
 	public function questions($action=false,$id=false){
 		$this->ion_auth->restrict_access(array('admin','pnls',
-			'ministere','pvv','educateur'));
+			'ministere','pvv','educateur','medecin'));
 		$datas=array();
 		$filters=array();
 		if($action == "educateur"){
@@ -1875,6 +1962,320 @@ exit;*/
 
 		$this->load->view('lgedit/show',$datas);
 	}
+
+	public function fingerprint($action, $user_id=false){
+		/*$this->ion_auth->restrict_access(array('admin','pnls',
+			'ministere','medecin','agent','pharmacie'));*/
+		$datas=array();
+		/*$filters=array('id' => $id);
+		$pvv=$this->lg->get_datas('pvv',$filters,true);
+		var_dump($pvv);exit;
+		$user=$this->lg->get_user_by_username($username);
+		$user_id = $id;*/
+
+		if($action=='fregister'){
+			/***********************************
+			/** FINGERPRINT REGISTRATION */
+			/** YOUR CODE HERE */
+			/************************************/
+			$enrollment_params = "$user_id;SecurityKey;".$this->time_limit_reg.";".base_url()."backend/fingerprint/fprocess_register;".base_url()."backend/fingerprint/getac";
+			$datas['datas']=$enrollment_params;
+		/*$device = $this->getDeviceBySn('C700F002328');
+var_dump($device); exit;*/
+			echo $enrollment_params; exit;
+		}
+		elseif($action=='fprocess_register'){
+			/***********************************
+			/** IDENTITY VERIFICATION */
+			/** YOUR CODE HERE */
+			/************************************/
+			if (isset($_POST['RegTemp']) && !empty($_POST['RegTemp'])) {
+				$this->process_register($_POST['RegTemp']);
+			}
+			exit;
+		}
+		elseif($action=='fverify'){
+			/***********************************
+			/** IDENTITY VERIFICATION */
+			/** YOUR CODE HERE */
+			/************************************/
+			$finger = $this->getUserFingerByUserId($user_id);
+			//var_dump($finger); exit;
+			$verify_params = "$user_id;".$finger['finger_data'].";SecurityKey;".$this->time_limit_ver.";".base_url()."backend/fingerprint/fprocess_verification;".base_url()."backend/fingerprint/getac".";extraParams";
+			echo $verify_params; exit;
+		}
+		elseif($action=='fprocess_verification'){
+			/***********************************
+			/** IDENTITY VERIFICATION */
+			/** YOUR CODE HERE */
+			/************************************/
+			//$agentId = get_cookie('landela_user');
+			//var_dump($agentId); exit;
+			//$this->save_cookie($agentId);
+			if (isset($_POST['VerPas']) && !empty($_POST['VerPas'])) {
+				$this->process_verification($_POST['VerPas']);
+			}
+		}
+		elseif($action=='messages'){
+			if (isset($_GET['msg']) && !empty($_GET['msg'])) {
+				
+				echo $_GET['msg'];
+
+			} elseif (isset($_GET['user_name']) && !empty($_GET['user_name']) && isset($_GET['time']) && !empty($_GET['time'])) {
+				
+				$user_name	= $_GET['user_name'];
+				$time		= date('Y-m-d H:i:s', strtotime($_GET['time']));
+				
+				echo "PVV identifi&eacute; avec succ&egrave;s ";//.date('Y-m-d H:i:s', strtotime($time));
+				
+			} else {
+					
+				$msg = "Parametre invalide..";
+				
+				echo "$msg";
+				
+			}
+			exit;
+		}
+		elseif($action=='getac'){
+			if (isset($_GET['vc']) && !empty($_GET['vc'])) {
+				$data = $this->getDeviceByAcSn($_GET['vc']);
+				echo $data['ac'].$data['sn'];
+			}
+			exit;
+		}
+		elseif($action=='checkreg'){
+			$pvvid = $_GET['user_id'];
+			$count = $this->lg->count_finger($pvvid); 
+			
+			if (intval($count) > intval($_GET['current'])) {
+				$res['result'] = true;			
+				$res['current'] = intval($count);			
+			}
+			else
+			{
+				$res['result'] = false;
+			}
+			echo json_encode($res);
+			exit;
+		} else {
+			echo "Parameter invalid..";
+			exit;
+		}
+
+
+		$datas['table']="pvv";
+		$datas['title']="pvv";
+		$datas['can_add']=true;
+		$datas['options']=array(
+				'can_edit' => true,
+				'can_delete' => false,
+				'hide_columns' => array('id','nom','prenom','cnib','username','password','password_confirm'),
+				'links' => array(
+					'person' => '/backend/profile_pvv'
+					),
+				'columns' => array(
+					'code' => array(
+						'label' => 'Code',
+						'type' => 'text'
+						)
+					)
+				//'dbclick' => '/taaps/projects'
+				);
+
+		$this->load->view($action,$datas);
+	}
+
+	public function process_register($RegTemp){
+//$ins0 = $this->db->insert('finger_finger',array('user_id' => '1111', 'finger_id' => '1112' , 'finger_data' => $regTemp));
+
+//echo 'THIS IS RegTemp '.$RegTemp;		
+		
+		$data 		= explode(";",$RegTemp);
+		$vStamp 	= $data[0];
+		$sn 		= $data[1];
+		$user_id	= $data[2];
+		$regTemp 	= $data[3];
+		/*$vStamp 	= 'NXC1CDE9D676FDD97E033B7ND0BC39DBADED8DD08340A18793CC5E72rereereeQZ00E028603132';//$data[0];
+		$sn 		= 'QZ00E028603';//$data[1];
+		$user_id	= '132';//$data[2];
+		$regTemp 	= 'rereeree';//$data[3];
+		
+		$vStamp = md5($vStamp);*/
+		$device = $this->getDeviceBySn($sn);
+
+		//$salt = md5($device['ac'].$device['vkey'].$regTemp.$sn.$user_id);
+		$salt = md5($device['ac'].$device['vkey'].$regTemp.$sn.$user_id);
+//echo $vStamp.'<br>'.$salt; exit;	
+		if (strtoupper($vStamp) == strtoupper($salt)) {		
+
+			$maxfinger = $this->lg->get_max_finger($user_id);
+			$fid 		= $maxfinger['finger_id'];
+			
+			if ($fid == 0) {
+
+				$ins = $this->db->insert('finger_finger',array('user_id' => $user_id, 'finger_id' => $fid+1 , 'finger_data' => $regTemp));
+			
+				if ($ins) {
+					$res['result'] = true;	
+					$msg='Enregsitrement reussi';			
+				} else {
+					$res['server'] = "Erreur lors de la sauvegarde!";
+					$msg='Erreur lors de la sauvegarde!';			
+				}
+			} else {
+				$res['result'] = false;
+				$res['user_finger_'.$user_id] = "Ce template existe.";
+				$msg='Ce template existe.';			
+			}
+			
+			//echo $msg;
+			echo base_url()."backend/fingerprint/messages?msg=$msg";
+			
+		} else {
+			
+			$msg = "Parameter invalid..";
+			
+			echo base_url()."backend/fingerprint/messages?msg=$msg";
+			//echo $msg;
+			//redirect(base_url()."backend/fingerprint/messages?msg=$msg");
+		}
+
+	}
+
+	public function process_verification($VerPas){
+		
+		$data 		= explode(";",$VerPas);
+		$user_id	= $data[0];
+		$vStamp 	= $data[1];
+		$time 		= $data[2];
+		$sn 		= $data[3];
+		
+		$fingerData = $this->getUserFingerByUserId($user_id);
+		$device 	= $this->getDeviceBySn($sn);
+		
+		//$this->db->where('user_id',$user_id);
+		//$old = $this->db->get('lg_datas')->row_array();
+
+		$pvv = $this->lg->get_data('pvv',array('id' => $user_id),true);
+		$user_name	= $pvv['username'];
+			
+		$salt = md5($sn.$fingerData['finger_data'].$device['vc'].$time.$user_id.$device['vkey']);
+		
+		if (strtoupper($vStamp) == strtoupper($salt)) {
+			
+			$log = $this->createLog($user_name, $time, $sn);
+			
+			if ($log == 1) {	
+
+				$connected_user = $this->extract_cookie(); //get_cookie('landela_user');
+
+				if($connected_user['agent_id'] && is_numeric($connected_user['agent_id'])){
+					// Vérifie si c'est un agent					
+					//if($connected_user['groupe']=='agent'){					
+						// Creer nouvelle consultation
+						$content = http_build_query (array (
+							'pvv' => $user_id,
+							'agent' => $connected_user['agent_id'],
+							'api' => 'true'
+						));
+
+						$context = stream_context_create (array (
+							'http' => array (
+										'method' => 'POST',
+										'content' => $content,
+									)
+						));
+
+						$result = file_get_contents(base_url().'lgedit/add/consultation', null, $context); 
+					//}
+					// Vérifie si c'est un prepose					
+					/*if($connected_user['groupe']=='pharmacie'){					
+						// Creer nouvelle consultation
+						$content = http_build_query (array (
+							'pvv' => $user_id,
+							'prepose_pharmacie' => $connected_user['agent_id'],
+							'api' => 'true',
+							'api_pharmacie' => 'true'
+						));
+
+						$context = stream_context_create (array (
+							'http' => array (
+										'method' => 'POST',
+										'content' => $content,
+									)
+						));
+
+						$result = file_get_contents(base_url().'lgedit/add/ordonnances', null, $context); 
+					}*/
+				}
+
+				//echo $msg;
+				echo base_url()."backend/fingerprint/messages?user_name=$user_name&time=$time";
+				//echo $base_path."backend/fingerprint/messages?";
+			
+			} else {
+			
+				//echo $msg;
+				echo base_url()."backend/fingerprint/fveriffailed";
+				//echo base_url()."backend/fingerprint/fverifsucceed";
+				//echo base_url()."backend/fingerprint/messages?msg=$log";
+				//echo $base_path."backend/fingerprint/messages?msg=$log";
+				
+			}
+		
+		} else {
+			
+			$msg = "Parameter invalid..";
+			
+			echo $msg;
+			//redirect(base_url()."backend/fingerprint/messages?msg=$msg");
+			//echo $base_path."backend/fingerprint/messages?msg=$msg";
+			
+		}
+
+	}
+
+
+	public function save_cookie($agentId){
+		$ip = $this->getRealIpAddr();
+		$ins = $this->db->insert('finger_cookie',array('agent_id' => $agentId, 'ip' => $ip));
+	}
+
+	public function extract_cookie(){
+		$agentId = get_cookie('landela_user');
+		$ip = $this->getRealIpAddr();
+
+		$this->db->select("*");
+		$this->db->where(array("ip"=>$ip,"agent_id"=>$agentId));
+		$query = $this->db->get("finger_cookie",1,0);
+
+		if($query->num_rows() > 0) {
+		    $connected_user['agent_id'] = $query->row("agent_id");
+		    $connected_user['groupe'] = $query->row("groupe");
+		    return $connected_user;    
+		} else {
+		    return FALSE;
+		}
+	}
+
+
+function getRealIpAddr()
+{
+    if (!empty($_SERVER['HTTP_CLIENT_IP']))   //check ip from share internet
+    {
+      $ip=$_SERVER['HTTP_CLIENT_IP'];
+    }
+    elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR']))   //to check ip is pass from proxy
+    {
+      $ip=$_SERVER['HTTP_X_FORWARDED_FOR'];
+    }
+    else
+    {
+      $ip=$_SERVER['REMOTE_ADDR'];
+    }
+    return $ip;
+}
 
 	public function test(){
 		//echo 2;
@@ -2016,6 +2417,74 @@ exit;*/
 			if(!empty($datas)) return $datas[0]['nom'];
 		}
 	}*/
+
+	function getUserFinger($username) {
+		//$pvv = $this->lg->get_data('pvv',array('code' => $id2),true);
+		//$user = $this->lg->get_user($user_id);
+		$finger = $this->lg->get_finger($username);
+
+		//var_dump($finger); exit;
+		/*while($row = mysqli_fetch_array($result)) {
+
+			$arr[$i] = array(
+				'user_id'	=>$row['user_id'],
+				"finger_id"	=>$row['finger_id'],
+				"finger_data"	=>$row['finger_data']
+				);
+			$i++;
+
+		}*/
+
+		return $finger;
+
+	}
+	
+	function getUserFingerByUserId($pvv_id) {
+		
+		$pvv = $this->lg->get_data('pvv',array('id' => $pvv_id),true);
+	
+		$finger = $this->lg->get_finger($pvv['username']);
+
+		/*while($row = mysqli_fetch_array($result)) {
+
+			$arr[$i] = array(
+				'user_id'	=>$row['user_id'],
+				"finger_id"	=>$row['finger_id'],
+				"finger_data"	=>$row['finger_data']
+				);
+			$i++;
+
+		}*/
+
+		return $finger;
+
+	}
+	
+	function getDeviceByAcSn($vc) {
+
+		$device = $this->lg->get_device(array('vc'=>$vc));
+		return $device;
+
+	}
+	
+	function getDeviceBySn($sn) {
+
+		$device = $this->lg->get_device(array('sn'=>$sn));
+		return $device;
+
+	}
+	
+	function createLog($user_name, $time, $sn) {
+		global $conn;
+		
+		$ins = $this->db->insert('finger_log',array('user_name' => $user_name, 'data' => date('Y-m-d H:i:s', strtotime($time))." (PC Time) | ".$sn." (SN)"));
+		if ($ins) {
+			return 1;				
+		} else {
+			return "Error insert log data!";
+		}
+		
+	}
 
 }
 

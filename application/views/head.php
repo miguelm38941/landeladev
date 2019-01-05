@@ -26,6 +26,7 @@ window.base_url='<?= base_url() ?>';
 <script type="text/javascript">
 $(document).ready(function(){
 
+    //$('.sidenav').sidenav();  
 
   $('#myTable').pageMe({
     pagerSelector:'#myPager',
